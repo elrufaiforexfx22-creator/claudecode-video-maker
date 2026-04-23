@@ -5,8 +5,25 @@ dist
 .env.*
 !.env.example
 
-# Render output
-out
+# Input assets folder (資料夾結構追蹤、檔案內容不上傳)
+input/**/*
+!input/
+!input/images/
+!input/videos/
+!input/audio/
+!input/**/.gitkeep
+!input/README.md
+!input/USAGE.md
+
+# Output assets folder (資料夾結構追蹤、渲染檔不上傳)
+output/**/*
+!output/
+!output/videos/
+!output/thumbnails/
+!output/thumbnails/yt/
+!output/thumbnails/ig/
+!output/thumbnails/reel/
+!output/**/.gitkeep
 
 # Your private content (created from src/content.example.ts on install)
 src/content.ts
