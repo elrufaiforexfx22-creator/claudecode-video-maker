@@ -1,11 +1,39 @@
 import React from "react";
-import { AbsoluteFill, Sequence } from "remotion";
-import { TutorialData } from "./types";
-import { StepScene, stepDurationFrames } from "./StepScene";
+import { AbsoluteFill, Audio, Sequence, staticFile } from "remotion";
+import { TutorialData, TutorialStep } from "./types";
+import { StepScene, stepDurationFrames, splitIntoPages } from "./StepScene";
+import { IntroScene, INTRO_DURATION_FRAMES } from "./IntroScene";
+import { TUTORIAL_CONFIG } from "./config";
 import { WHITE } from "../constants";
+import tutorialDurations from "../../public/voiceover/tutorial-ch1/durations.json";
 
 const FPS = 30;
-const ACCENT_COLOR = "#E63946";
+const ACCENT_COLOR = TUTORIAL_CONFIG.accentColor;
+const TAIL_FRAMES = 15; // 0.5s 尾巴,避免音訊還沒講完就切場
+
+const TUTORIAL_DURATIONS = tutorialDurations as Record<string, number>;
+
+function introDurationFrames(): number {
+  const audioSec = TUTORIAL_DURATIONS.intro ?? 0;
+  const audioFrames = Math.ceil(audioSec * FPS) + TAIL_FRAMES;
+  return Math.max(INTRO_DURATION_FRAMES, audioFrames);
+}
+
+function pageAudioDurationsFor(step: TutorialStep): (number | null)[] {
+  const pages = splitIntoPages(step.blocks);
+  const pageCount = Math.max(pages.length, step.voiceovers?.length ?? 0, 1);
+  const result: (number | null)[] = [];
+  for (let i = 0; i < pageCount; i++) {
+    const key = `${step.id}-p${i + 1}`;
+    const sec = TUTORIAL_DURATIONS[key];
+    result.push(typeof sec === "number" ? sec : null);
+  }
+  return result;
+}
+
+function stepTotalFrames(step: TutorialStep): number {
+  return stepDurationFrames(step, pageAudioDurationsFor(step));
+}
 
 export type TutorialCompositionProps = {
   data: TutorialData;
@@ -14,12 +42,27 @@ export type TutorialCompositionProps = {
 export const TutorialComposition: React.FC<TutorialCompositionProps> = ({
   data,
 }) => {
-  let cursor = 0;
+  const introDur = introDurationFrames();
+  let cursor = introDur;
   return (
     <AbsoluteFill style={{ background: WHITE }}>
+      {/* BGM 鋪底,整段迴圈 */}
+      <Audio src={staticFile("music/bgm.mp3")} loop volume={0.2} />
+
+      <Sequence from={0} durationInFrames={introDur}>
+        <IntroScene
+          accentColor={ACCENT_COLOR}
+          titleAccent={TUTORIAL_CONFIG.intro.titleAccent}
+          titleSuffix={TUTORIAL_CONFIG.intro.titleSuffix}
+          platform={TUTORIAL_CONFIG.intro.platform}
+        />
+        {data.intro?.voiceover ? (
+          <Audio src={staticFile("voiceover/tutorial-ch1/intro.wav")} />
+        ) : null}
+      </Sequence>
       {data.steps.map((step) => {
         const from = cursor;
-        const duration = stepDurationFrames(step);
+        const duration = stepTotalFrames(step);
         cursor += duration;
         return (
           <Sequence
@@ -27,7 +70,12 @@ export const TutorialComposition: React.FC<TutorialCompositionProps> = ({
             from={from}
             durationInFrames={duration}
           >
-            <StepScene step={step} accentColor={ACCENT_COLOR} />
+            <StepScene
+              step={step}
+              accentColor={ACCENT_COLOR}
+              pageAudioDurations={pageAudioDurationsFor(step)}
+              watermark={TUTORIAL_CONFIG.watermark}
+            />
           </Sequence>
         );
       })}
@@ -36,7 +84,10 @@ export const TutorialComposition: React.FC<TutorialCompositionProps> = ({
 };
 
 export function calcTutorialDurationFrames(data: TutorialData): number {
-  return data.steps.reduce((sum, s) => sum + stepDurationFrames(s), 0);
+  return (
+    introDurationFrames() +
+    data.steps.reduce((sum, s) => sum + stepTotalFrames(s), 0)
+  );
 }
 
 export const TUTORIAL_FPS = FPS;

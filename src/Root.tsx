@@ -16,6 +16,12 @@ import {
   TUTORIAL_WIDTH,
   TUTORIAL_HEIGHT,
 } from "./tutorial/TutorialComposition";
+import { TUTORIAL_CONFIG } from "./tutorial/config";
+import {
+  TutorialThumbnailYT,
+  TutorialThumbnailIG,
+  TutorialThumbnailReel,
+} from "./tutorial/TutorialThumbnails";
 
 const durations = durationsJson as Record<string, number>;
 
@@ -124,6 +130,41 @@ export const RemotionRoot: React.FC = () => {
           }}
         />
       ) : null}
+
+      {/* Tutorial thumbnails (平台膠囊由 config.thumbnail.platformBadge 決定) */}
+      <Still
+        id="TutorialCh1ThumbnailYT"
+        component={TutorialThumbnailYT}
+        width={1280}
+        height={720}
+        defaultProps={{
+          content: TUTORIAL_CONFIG.thumbnail.content,
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+          platformBadge: TUTORIAL_CONFIG.thumbnail.platformBadge,
+        }}
+      />
+      <Still
+        id="TutorialCh1ThumbnailIG"
+        component={TutorialThumbnailIG}
+        width={1080}
+        height={1080}
+        defaultProps={{
+          content: TUTORIAL_CONFIG.thumbnail.content,
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+          platformBadge: TUTORIAL_CONFIG.thumbnail.platformBadge,
+        }}
+      />
+      <Still
+        id="TutorialCh1ThumbnailReel"
+        component={TutorialThumbnailReel}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          content: TUTORIAL_CONFIG.thumbnail.content,
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+          platformBadge: TUTORIAL_CONFIG.thumbnail.platformBadge,
+        }}
+      />
     </>
   );
 };

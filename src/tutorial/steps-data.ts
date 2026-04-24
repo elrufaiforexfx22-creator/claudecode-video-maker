@@ -75,6 +75,16 @@ export function parseTutorialData(raw: unknown): TutorialData {
     return {
       id: step.id as string,
       title: step.title as string,
+      voiceovers: Array.isArray(step.voiceovers)
+        ? (step.voiceovers as unknown[]).map((v, vi) => {
+            if (typeof v !== "string" || v.length === 0) {
+              throw new Error(
+                `tutorial data: step[${i}].voiceovers[${vi}] must be non-empty string`,
+              );
+            }
+            return v;
+          })
+        : undefined,
       blocks: blocks.map((b, j) =>
         parseBlock(b, `tutorial data: step[${i}].blocks[${j}]`),
       ),
@@ -86,6 +96,16 @@ export function parseTutorialData(raw: unknown): TutorialData {
     source: String(obj.source ?? ""),
     chapter: String(obj.chapter ?? ""),
     capturedAt: String(obj.capturedAt ?? ""),
+    intro:
+      obj.intro && typeof obj.intro === "object"
+        ? {
+            voiceover:
+              typeof (obj.intro as Record<string, unknown>).voiceover ===
+              "string"
+                ? ((obj.intro as Record<string, unknown>).voiceover as string)
+                : undefined,
+          }
+        : undefined,
     steps: parsedSteps,
   };
 }

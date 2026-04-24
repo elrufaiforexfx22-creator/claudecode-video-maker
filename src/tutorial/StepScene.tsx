@@ -1,13 +1,16 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Audio,
+  Img,
   Sequence,
   interpolate,
   spring,
+  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { Block, TutorialStep } from "./types";
+import { Block, TutorialStep, Watermark } from "./types";
 import { Paragraph } from "./blocks/Paragraph";
 import { ImageBlock } from "./blocks/ImageBlock";
 import { CodeBlock } from "./blocks/CodeBlock";
@@ -17,10 +20,13 @@ import { BLACK, FONT_FAMILY, WHITE } from "../constants";
 type Props = {
   step: TutorialStep;
   accentColor: string;
+  pageAudioDurations?: (number | null | undefined)[]; // seconds per page, or null/undefined
+  watermark?: Watermark; // 右下角浮水印(預設 bottomRight);省略則不顯示
 };
 
 const FPS = 30;
 const OVERLAP_FRAMES = 9;
+const TAIL_FRAMES = 15; // 0.5s tail after audio to avoid cut-off
 
 export function blockDurationFrames(block: Block): number {
   switch (block.type) {
@@ -32,7 +38,7 @@ export function blockDurationFrames(block: Block): number {
   }
 }
 
-function splitIntoPages(blocks: Block[]): Block[][] {
+export function splitIntoPages(blocks: Block[]): Block[][] {
   const pages: Block[][] = [[]];
   for (const b of blocks) {
     if (b.type === "pageBreak") {
@@ -45,37 +51,61 @@ function splitIntoPages(blocks: Block[]): Block[][] {
   return pages.filter((p) => p.length > 0);
 }
 
-export function pageDurationFrames(pageBlocks: Block[]): number {
+export function pageDurationFrames(
+  pageBlocks: Block[],
+  audioDurationSec?: number | null,
+): number {
   let total = 0;
   pageBlocks.forEach((b, i) => {
     const d = blockDurationFrames(b);
     total += d - (i === 0 ? 0 : OVERLAP_FRAMES);
   });
   total += FPS; // 1 秒 tail
+  if (audioDurationSec && audioDurationSec > 0) {
+    const audioFrames = Math.ceil(audioDurationSec * FPS) + TAIL_FRAMES;
+    total = Math.max(total, audioFrames);
+  }
   return total;
 }
 
-export function stepDurationFrames(step: TutorialStep): number {
+export function stepDurationFrames(
+  step: TutorialStep,
+  pageAudioDurations?: (number | null | undefined)[],
+): number {
   const pages = splitIntoPages(step.blocks);
-  return pages.reduce((sum, p) => sum + pageDurationFrames(p), 0);
+  return pages.reduce(
+    (sum, p, i) => sum + pageDurationFrames(p, pageAudioDurations?.[i] ?? null),
+    0,
+  );
 }
 
-export const StepScene: React.FC<Props> = ({ step, accentColor }) => {
+export const StepScene: React.FC<Props> = ({
+  step,
+  accentColor,
+  pageAudioDurations,
+  watermark,
+}) => {
   const pages = splitIntoPages(step.blocks);
   let cursor = 0;
   return (
     <AbsoluteFill style={{ background: WHITE }}>
       {pages.map((pageBlocks, i) => {
-        const dur = pageDurationFrames(pageBlocks);
+        const audioSec = pageAudioDurations?.[i] ?? null;
+        const dur = pageDurationFrames(pageBlocks, audioSec);
         const from = cursor;
         cursor += dur;
+        const audioSrc = step.voiceovers?.[i]
+          ? staticFile(`voiceover/tutorial-ch1/${step.id}-p${i + 1}.wav`)
+          : null;
         return (
           <Sequence key={i} from={from} durationInFrames={dur}>
             <PageContent
               title={step.title}
               blocks={pageBlocks}
               accentColor={accentColor}
+              watermark={watermark}
             />
+            {audioSrc ? <Audio src={audioSrc} /> : null}
           </Sequence>
         );
       })}
@@ -83,11 +113,46 @@ export const StepScene: React.FC<Props> = ({ step, accentColor }) => {
   );
 };
 
+const WatermarkOverlay: React.FC<{ watermark: Watermark }> = ({ watermark }) => {
+  const size = watermark.size ?? 72;
+  const opacity = watermark.opacity ?? 0.85;
+  const position = watermark.position ?? "bottomRight";
+  const margin = 32;
+  const positionStyles: Record<NonNullable<Watermark["position"]>, React.CSSProperties> = {
+    bottomRight: { bottom: margin, right: margin },
+    bottomLeft: { bottom: margin, left: margin },
+    topRight: { top: margin, right: margin },
+    topLeft: { top: margin, left: margin },
+  };
+  // src 可以是:
+  //   - bundled 的 URL(來自 config.ts 的 import ... from "../../input/...")
+  //   - public/ 下的相對路徑(需自行用 staticFile 包)
+  // 簡單偵測:已經是 http/blob/data URL 或 /_bundle 開頭就直接用,否則 staticFile。
+  const resolvedSrc =
+    /^(https?:|blob:|data:|\/)/.test(watermark.src)
+      ? watermark.src
+      : staticFile(watermark.src);
+  return (
+    <Img
+      src={resolvedSrc}
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        opacity,
+        ...positionStyles[position],
+      }}
+    />
+  );
+};
+
 const PageContent: React.FC<{
   title: string;
   blocks: Block[];
   accentColor: string;
-}> = ({ title, blocks, accentColor }) => {
+  watermark?: Watermark;
+}> = ({ title, blocks, accentColor, watermark }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -108,6 +173,7 @@ const PageContent: React.FC<{
   return (
     <div
       style={{
+        position: "relative",
         width: "100%",
         height: "100%",
         background: WHITE,
@@ -121,6 +187,8 @@ const PageContent: React.FC<{
         boxSizing: "border-box",
       }}
     >
+      {watermark ? <WatermarkOverlay watermark={watermark} /> : null}
+
       <div
         style={{
           fontSize: 56,

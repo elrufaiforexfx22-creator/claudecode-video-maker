@@ -70,6 +70,33 @@ test("parseTutorialData: 拒絕未知 block type", () => {
   assert.throws(() => parseTutorialData(input), /type/);
 });
 
+test("parseTutorialData: 接受 intro 與 step.voiceovers 陣列", () => {
+  const input = {
+    source: "s", chapter: "c", capturedAt: "t",
+    intro: { voiceover: "hi" },
+    steps: [
+      {
+        id: "s1",
+        title: "t",
+        voiceovers: ["page 1 narration", "page 2 narration"],
+        pointAt: null,
+        highlightBox: null,
+        blocks: [
+          { type: "paragraph", text: "a" },
+          { type: "pageBreak" },
+          { type: "paragraph", text: "b" },
+        ],
+      },
+    ],
+  };
+  const result = parseTutorialData(input);
+  assert.equal(result.intro?.voiceover, "hi");
+  assert.deepEqual(result.steps[0].voiceovers, [
+    "page 1 narration",
+    "page 2 narration",
+  ]);
+});
+
 test("parseTutorialData: 接受 pageBreak block", () => {
   const input = {
     source: "s", chapter: "c", capturedAt: "t",

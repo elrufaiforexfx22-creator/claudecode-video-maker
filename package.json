@@ -34,6 +34,7 @@
     "render:studio": "remotion studio",
     "voiceover": "tsx scripts/generate-voiceover.ts",
     "capture:tutorial": "tsx scripts/capture-tutorial.ts",
+    "voiceover:tutorial": "tsx scripts/generate-tutorial-voiceover.ts",
     "archive": "node scripts/archive.mjs",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
