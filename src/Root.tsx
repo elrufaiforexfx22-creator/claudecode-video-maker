@@ -6,6 +6,8 @@ import { content as testContent } from "./content-test";
 import { ThumbnailYT } from "./thumbnails/ThumbnailYT";
 import { ThumbnailIG } from "./thumbnails/ThumbnailIG";
 import { ThumbnailReel } from "./thumbnails/ThumbnailReel";
+import { BannerYT } from "./BannerYT";
+import { BannerFB } from "./BannerFB";
 import durationsJson from "../public/voiceover/durations.json";
 import { TUTORIAL_STEPS_JSON } from "./tutorial/content";
 import { parseTutorialData } from "./tutorial/steps-data";
@@ -131,6 +133,44 @@ export const RemotionRoot: React.FC = () => {
           }}
         />
       ) : null}
+
+      {/* YouTube channel banner(2560x1440,中央 1546x423 是 mobile-safe 區) */}
+      <Still
+        id="BannerYT"
+        component={BannerYT}
+        width={2560}
+        height={1440}
+        defaultProps={{
+          headlineLeft: "自動化拍片整合",
+          headlineAccent: "工作流",
+          headlineRight: "",
+          subline: "Claude Code × 隨拚隨改 × 真人配音 × 自動發片到 YT / IG / Threads",
+          footerLine: "日更發片神器",
+          decorLeftTop: "$ npx claudecode-video-maker",
+          decorRightBottom: "→ YouTube · Instagram · Threads",
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+        }}
+      />
+
+      {/* Facebook 粉專橫幅(1640x624,HD;FB 顯示時 desktop ~820x312,mobile 中央裁切) */}
+      <Still
+        id="BannerFB"
+        component={BannerFB}
+        width={1640}
+        height={624}
+        defaultProps={{
+          headlineLeft: "自動化拍片整合",
+          headlineAccent: "工作流",
+          headlineRight: "",
+          subline: "Claude Code × 隨拚隨改 × 真人配音 × 自動發片到 YT / IG / Threads",
+          footerLine: "日更發片神器",
+          tagline: [
+            "把工具連結丟給 Claude Code 安裝,再告訴它影片需求就可以了,所有功能全靠對話完成",
+            "就是這麼簡單無腦,點這張圖查看工具連結 ☝️",
+          ],
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+        }}
+      />
 
       {/* Tutorial thumbnails (平台膠囊由 config.thumbnail.platformBadge 決定) */}
       <Still
