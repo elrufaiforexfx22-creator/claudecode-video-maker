@@ -12,7 +12,7 @@
  *
  * ElevenLabs 必填:ELEVENLABS_API_KEY、ELEVENLABS_VOICE_ID
  *   選填:ELEVENLABS_MODEL(預設 eleven_multilingual_v2)
- *        ELEVENLABS_SAMPLE_RATE(預設 44100,Starter tier 最高 24000)
+ *        ELEVENLABS_SAMPLE_RATE(預設 24000,Pro tier 才能用 44100)
  *
  * Gemini 必填:GOOGLE_API_KEY
  *   選填:GEMINI_VOICE(預設 Aoede)
@@ -119,7 +119,8 @@ function makeElevenLabsProvider() {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const voiceId = process.env.ELEVENLABS_VOICE_ID;
   const model = process.env.ELEVENLABS_MODEL ?? "eleven_multilingual_v2";
-  const sampleRate = Number(process.env.ELEVENLABS_SAMPLE_RATE ?? 44100);
+  // PCM 取樣率:Starter / Creator 上限 24000;Pro 才解鎖 44100。
+  const sampleRate = Number(process.env.ELEVENLABS_SAMPLE_RATE ?? 24000);
 
   if (!apiKey) {
     console.error("❌ Missing ELEVENLABS_API_KEY in .env");
