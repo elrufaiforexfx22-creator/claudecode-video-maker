@@ -25,6 +25,13 @@ Meta 官方公告 2025-12-18 起,**Posts 跟 Reels 都強制限制最多 5 個 h
 - 每支影片**獨立挑前 4 格**(別整個系列共用同一組)
 - **第 5 格永遠 `#日更拍片神器`** — 累積系列、方便觀眾 follow tag、自己統計流量
 - 不要塞無關但流量大的 tag(像 `#台灣` `#follow`),會被歸到不對的圈 → 演算法降推
+- ⚠️ **5 格 keyword 不能重疊** — Meta AI 演算法看 hashtag **語意而非字串**,如果有 2 格共用同個 keyword(例:slot 4 `#日更拍片` + slot 5 `#日更拍片神器`、或 slot 1 `#claudecode` + slot 4 `#ClaudeCode教學`)會被當成同一個訊號,等於只用了 4 格。每格找完全不同 keyword 的角度:
+  - slot 1 講「用什麼工具」(例 `#claudecode`)
+  - slot 2 講「屬於哪個大類」(例 `#vibecoding` / `#aitools`)
+  - slot 3 講「誰會看」(例 `#一人公司`)
+  - slot 4 講「平台 / 形式 / 系列」(例 `#Mac教學`)
+  - slot 5 是 branded(例 `#日更拍片神器`)
+  選完先檢查:把 5 個 hashtag 並排,有沒有兩個共用 ≥ 3 字的 keyword?有就換掉。
 
 ## 2. Caption 寫法
 
