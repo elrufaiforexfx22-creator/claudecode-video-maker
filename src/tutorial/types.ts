@@ -14,6 +14,7 @@ export type CalloutBlock = {
   kind: "tip" | "info" | "warn";
   icon: string;
   text: string;
+  size?: "default" | "hero"; // hero = 大字置中,適合結尾「🎉 恭喜完成」這種 finale 場景
 };
 export type PageBreakBlock = { type: "pageBreak" };
 
@@ -29,6 +30,9 @@ export type TutorialStep = {
   title: string;
   blocks: Block[];
   voiceovers?: string[]; // index = page index (0-based); matches pageBreak split
+  // 每頁標題覆寫:index = page index,值為 null 時 fallback 用 step.title。
+  // 例如 step 6 是「安裝 Zeabur Skills」但最後一頁要顯示「恭喜完成」。
+  pageTitles?: (string | null)[];
   pointAt: Point | null;
   highlightBox: Box | null;
 };

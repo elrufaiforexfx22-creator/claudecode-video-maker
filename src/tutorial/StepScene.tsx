@@ -95,10 +95,12 @@ export const StepScene: React.FC<Props> = ({
         const audioSrc = step.voiceovers?.[i]
           ? staticFile(`voiceover/${videoName}/${step.id}-p${i + 1}.wav`)
           : null;
+        // 該頁標題:優先用 step.pageTitles[i] 覆寫;為 null/undefined 時退回 step.title。
+        const pageTitle = step.pageTitles?.[i] ?? step.title;
         return (
           <Sequence key={i} from={from} durationInFrames={dur}>
             <PageContent
-              title={step.title}
+              title={pageTitle}
               blocks={pageBlocks}
               accentColor={accentColor}
               watermark={watermark}

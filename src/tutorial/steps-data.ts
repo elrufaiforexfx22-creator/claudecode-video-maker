@@ -36,11 +36,16 @@ function parseBlock(raw: unknown, ctx: string): Block {
         throw new Error(`${ctx}: callout.${k} must be string`);
       }
     }
+    const size = b.size;
+    if (size !== undefined && size !== "default" && size !== "hero") {
+      throw new Error(`${ctx}: callout.size invalid: ${String(size)}`);
+    }
     return {
       type: "callout",
       kind,
       icon: b.icon as string,
       text: b.text as string,
+      ...(size ? { size } : {}),
     };
   }
   if (t === "pageBreak") {
@@ -83,6 +88,17 @@ export function parseTutorialData(raw: unknown): TutorialData {
               );
             }
             return v;
+          })
+        : undefined,
+      pageTitles: Array.isArray(step.pageTitles)
+        ? (step.pageTitles as unknown[]).map((t, ti) => {
+            if (t === null || t === undefined) return null;
+            if (typeof t !== "string") {
+              throw new Error(
+                `tutorial data: step[${i}].pageTitles[${ti}] must be string or null`,
+              );
+            }
+            return t;
           })
         : undefined,
       blocks: blocks.map((b, j) =>
