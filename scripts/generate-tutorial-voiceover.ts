@@ -1,7 +1,21 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { parseTutorialData } from "../src/tutorial/steps-data";
-import tutorialJson from "../public/screenshots/tutorial-ch1/steps.json";
+
+const name = process.argv[2];
+if (!name) {
+  console.error(
+    "用法:tsx scripts/generate-tutorial-voiceover.ts <video-name> [...filterIds]",
+  );
+  console.error("例:tsx scripts/generate-tutorial-voiceover.ts tutorial-ch2");
+  process.exit(1);
+}
+const STEPS_PATH = join("public", "screenshots", name, "steps.json");
+if (!existsSync(STEPS_PATH)) {
+  console.error(`找不到 steps.json:${STEPS_PATH}`);
+  process.exit(1);
+}
+const tutorialJson = JSON.parse(readFileSync(STEPS_PATH, "utf-8"));
 
 function loadEnv() {
   const envPath = join(process.cwd(), ".env");
@@ -27,8 +41,7 @@ if (!API_KEY) {
 
 const MODEL = "gemini-2.5-flash-preview-tts";
 const VOICE = "Aoede"; // 女聲偏旋律感,教學片清晰
-const OUTPUT_SUBDIR = "tutorial-ch1";
-const OUTPUT_DIR = join("public", "voiceover", OUTPUT_SUBDIR);
+const OUTPUT_DIR = join("public", "voiceover", name);
 
 type ClipToRender = { id: string; text: string };
 
@@ -119,7 +132,7 @@ async function generate(clip: ClipToRender): Promise<number> {
   return seconds;
 }
 
-const filter = process.argv.slice(2);
+const filter = process.argv.slice(3);
 const toGenerate =
   filter.length > 0 ? clips.filter((c) => filter.includes(c.id)) : clips;
 

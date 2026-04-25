@@ -1,15 +1,23 @@
 /**
  * scripts/capture-tutorial.ts
  *
- * 爬 claude-code-tutorial.com 第一章「安裝 Claude Code」的步驟內容,
+ * 爬 claude-code-tutorial.com 指定章節的步驟內容,
  * 以 blocks[] 有序陣列保留 DOM 順序(paragraph / image / code / callout),
- * 下載所有截圖,輸出到 public/screenshots/tutorial-ch1/。
+ * 下載所有截圖,輸出到 public/screenshots/<name>/。
  *
- * 執行:npm run capture:tutorial
+ * 用法:
+ *   tsx scripts/capture-tutorial.ts <video-name> <chapter-idx>
+ *
+ *   <video-name>  輸出資料夾名,需以 chN 結尾(N 用來組 step id 前綴)
+ *                 例:tutorial-ch2 → step id = ch2-s1, ch2-s2, ...
+ *   <chapter-idx> 0-indexed,對應網站 .chapter[data-chapter="N"]
+ *                 (站上 ch1 安裝 = 0,ch2 開發工具 = 1,以此類推)
+ *
+ * 例:tsx scripts/capture-tutorial.ts tutorial-ch2 1
  *
  * Selector 策略(若網站改版需調整這裡):
- *   - 第一章 container:`.chapter[data-chapter="0"]` (第一章 active 的 DOM 區塊)
- *   - chapter heading:該 container 內 `.chapter-header h2` (可能帶 emoji prefix)
+ *   - 章節 container:`.chapter[data-chapter="<idx>"]`
+ *   - chapter heading:該 container 內 `.chapter-header h2`
  *   - 每步驟:該 container 內 `.step[data-step]`
  *     - title:`.step-title`
  *     - content:`.step-content` 底下各子元素按 DOM 順序轉成 blocks
@@ -18,16 +26,34 @@
  *       - <div.code-block> → code(取裡面 pre code)
  *       - <div.callout>    → callout(kind = tip / info / warn)
  *
- * 輸出:steps.raw.json(不覆蓋 steps.json,後續 Task 由 post-process 處理)
+ * 輸出:steps.raw.json(不覆蓋 steps.json,後續由人工/Skill 加 voiceovers[] + pageBreak)
  */
 import { chromium } from "playwright";
 import { writeFile, mkdir } from "node:fs/promises";
 import { join, extname } from "node:path";
 
 const SOURCE_URL = "https://claude-code-tutorial.com/";
-const OUTPUT_DIR = "public/screenshots/tutorial-ch1";
-const CHAPTER_HEADING_KEYWORD = "安裝 Claude Code"; // 用來驗證抓到的是正確章節
-const EXPECTED_STEP_COUNT = 3;
+
+const [name, chapterIdxStr] = process.argv.slice(2);
+if (!name || !chapterIdxStr) {
+  console.error(
+    "用法:tsx scripts/capture-tutorial.ts <video-name> <chapter-idx>",
+  );
+  console.error("例:tsx scripts/capture-tutorial.ts tutorial-ch2 1");
+  process.exit(1);
+}
+const chapterIdx = Number(chapterIdxStr);
+if (!Number.isInteger(chapterIdx) || chapterIdx < 0) {
+  console.error(`chapter-idx 必須為非負整數,實際:${chapterIdxStr}`);
+  process.exit(1);
+}
+const idPrefixMatch = name.match(/ch(\d+)$/);
+if (!idPrefixMatch) {
+  console.error("video-name 必須以 'chN' 結尾(N = 數字),用來組 step id 前綴");
+  process.exit(1);
+}
+const idPrefix = `ch${idPrefixMatch[1]}`;
+const OUTPUT_DIR = `public/screenshots/${name}`;
 
 type Block =
   | { type: "paragraph"; text: string }
@@ -39,8 +65,8 @@ type Step = {
   id: string;
   title: string;
   blocks: Block[];
-  pointAt: null; // 階段 2 填
-  highlightBox: null; // 階段 3 填
+  pointAt: null;
+  highlightBox: null;
 };
 
 function makeSafeTitle(title: string): string {
@@ -63,26 +89,17 @@ async function main() {
     });
     await page.goto(SOURCE_URL, { waitUntil: "networkidle" });
 
-    // 1. 鎖定第一章 container(data-chapter="0")
-    //    註:章節是 JS 切換顯示的,部分狀態下會 hidden,只需要 DOM 存在即可。
-    const chapter = page.locator('.chapter[data-chapter="0"]');
+    // 1. 鎖定指定章節 container
+    const chapter = page.locator(`.chapter[data-chapter="${chapterIdx}"]`);
     await chapter.waitFor({ state: "attached", timeout: 10_000 });
 
-    // 驗證 heading 文字確實包含「安裝 Claude Code」
     const headingText =
       (await chapter.locator(".chapter-header h2").first().textContent()) ?? "";
-    if (!headingText.includes(CHAPTER_HEADING_KEYWORD)) {
-      throw new Error(
-        `章節 heading 不符預期:實際「${headingText.trim()}」,預期包含「${CHAPTER_HEADING_KEYWORD}」`,
-      );
-    }
     console.log(`章節 heading:${headingText.trim()}`);
 
-    // 2. 強制把章節和所有 step 展開,避免 display:none / collapsed 影響內容讀取。
-    //    (網站預設只有第一個 step 是 .open,其他 step body 被 CSS 收起)
-    await page.evaluate(() => {
-      // 章節本身是 JS 切換 display:none 的;往上走把祖先也打開
-      const ch = document.querySelector('.chapter[data-chapter="0"]');
+    // 2. 強制把章節和所有 step 展開
+    await page.evaluate((idx) => {
+      const ch = document.querySelector(`.chapter[data-chapter="${idx}"]`);
       let node: HTMLElement | null = ch instanceof HTMLElement ? ch : null;
       while (node && node !== document.body) {
         node.style.display = "block";
@@ -104,33 +121,29 @@ async function main() {
           el.style.opacity = "1";
         }
       });
-    });
+    }, chapterIdx);
 
     // 3. 抓所有 step
     const stepLocators = chapter.locator(".step[data-step]");
     const stepCount = await stepLocators.count();
-    console.log(
-      `抓到 ${stepCount} 個原始候選,預期 ${EXPECTED_STEP_COUNT} 個。`,
-    );
+    console.log(`抓到 ${stepCount} 個 step。`);
 
     if (stepCount === 0) {
       throw new Error(
-        "沒抓到任何步驟,DOM selector 可能要調整。可在此處加 `await writeFile('/tmp/tutorial.html', await page.content())` 檢查 DOM。",
+        "沒抓到任何步驟,DOM selector 可能要調整。",
       );
     }
 
-    // 4. 逐 step 抓 title 並用 block extractor 取 blocks
+    // 4. 逐 step 抓 title 並取 blocks
     const steps: Step[] = [];
-    for (let i = 0; i < Math.min(stepCount, EXPECTED_STEP_COUNT); i++) {
+    for (let i = 0; i < stepCount; i++) {
       const step = stepLocators.nth(i);
 
       const title =
         ((await step.locator(".step-title").first().textContent()) ?? "").trim();
 
-      // 用 page.evaluate 走 .step-content 的子元素,按 DOM 順序轉成 blocks
       const blocks: Block[] = await step.evaluate((stepEl) => {
-        // tsx 編譯會注入 __name(fn, "fn") 幫匿名箭頭函式命名,但 browser
-        // context 沒這個 helper 會噴 ReferenceError。這裡 stub 掉即可。
+        // tsx 編譯會注入 __name(fn, "fn"),browser context 沒這個 helper 會噴。
         (globalThis as unknown as { __name: (fn: unknown) => unknown }).__name =
           (fn) => fn;
 
@@ -152,10 +165,9 @@ async function main() {
                 const href = e.getAttribute("href") ?? "";
                 result += `[${inner}](${href})`;
               } else if (tag === "br") result += "\n";
-              else result += inner; // 不認得的 tag → 只留文字
+              else result += inner;
             }
           });
-          // 只壓縮水平空白,保留 <br> 產生的 \n
           return result.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").trim();
         }
 
@@ -185,7 +197,6 @@ async function main() {
                 : "info";
             const icon =
               child.querySelector(".callout-icon")?.textContent?.trim() ?? "";
-            // callout 的文字在第 2 個 <span> 裡(不是 .callout-icon 那個)
             const textSpan = Array.from(child.querySelectorAll("span")).find(
               (s) => !s.classList.contains("callout-icon"),
             );
@@ -197,18 +208,16 @@ async function main() {
       });
 
       steps.push({
-        id: `ch1-s${i + 1}`,
+        id: `${idPrefix}-s${i + 1}`,
         title,
         blocks,
         pointAt: null,
         highlightBox: null,
       });
-      console.log(
-        `  ✓ step ${i + 1}: ${title}(${blocks.length} blocks)`,
-      );
+      console.log(`  ✓ step ${i + 1}: ${title}(${blocks.length} blocks)`);
     }
 
-    // 5. 全域累計索引下載所有 image block,並改寫 src 為本地相對路徑
+    // 5. 全域累計索引下載所有 image,並改寫 src 為本地相對路徑
     let globalImgIdx = 0;
     for (const step of steps) {
       const safeTitle = makeSafeTitle(step.title);
@@ -221,7 +230,7 @@ async function main() {
         const suffix =
           perStepImgCount === 1
             ? ""
-            : `-${String.fromCharCode(96 + perStepImgCount)}`; // -b / -c / ...
+            : `-${String.fromCharCode(96 + perStepImgCount)}`;
 
         const imgAbsUrl = new URL(block.src, SOURCE_URL).toString();
         const ext = extname(new URL(imgAbsUrl).pathname) || ".png";
@@ -233,7 +242,7 @@ async function main() {
           throw new Error(`下載失敗 ${imgAbsUrl}: HTTP ${resp.status()}`);
         }
         await writeFile(out, await resp.body());
-        block.src = `screenshots/tutorial-ch1/${filename}`;
+        block.src = `screenshots/${name}/${filename}`;
         console.log(`    ↓ img → ${filename}`);
       }
     }
