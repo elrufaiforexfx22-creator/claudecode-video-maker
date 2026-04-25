@@ -28,6 +28,9 @@ src/tutorial/config.ts
 # Per-video content shim (statically imports steps.json + durations.json)
 src/tutorial/content.ts
 
+# Personal skills (個人專用 workflow,不要分享)
+.claude/skills/daily-threads-post/
+
 # Archived video contents (private backups — run `npm run archive` 前的舊版)
 src/videos-archive/
 
