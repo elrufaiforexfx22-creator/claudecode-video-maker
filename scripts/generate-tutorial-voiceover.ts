@@ -11,7 +11,7 @@
  *   TTS_PROVIDER=elevenlabs (預設) | gemini
  *
  * ElevenLabs 必填:ELEVENLABS_API_KEY、ELEVENLABS_VOICE_ID
- *   選填:ELEVENLABS_MODEL(預設 eleven_multilingual_v2)
+ *   選填:ELEVENLABS_MODEL(預設 eleven_v3,本專案規則固定 V3,語氣 / 停頓比 V2 自然)
  *        ELEVENLABS_SAMPLE_RATE(預設 24000,Pro tier 才能用 44100)
  *
  * Gemini 必填:GOOGLE_API_KEY
@@ -121,7 +121,7 @@ function pcmToWav(
 function makeElevenLabsProvider() {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const voiceId = process.env.ELEVENLABS_VOICE_ID;
-  const model = process.env.ELEVENLABS_MODEL ?? "eleven_multilingual_v2";
+  const model = process.env.ELEVENLABS_MODEL ?? "eleven_v3";
   // PCM 取樣率:Starter / Creator 上限 24000;Pro 才解鎖 44100。
   const sampleRate = Number(process.env.ELEVENLABS_SAMPLE_RATE ?? 24000);
   // 語速倍率:0.5 ~ 2.0,1.0 = 原速,< 1 變慢、> 1 變快。沒設就跟模型預設走。
