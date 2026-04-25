@@ -1,11 +1,23 @@
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { content } from "../src/content";
 
 // 簡易 .env 讀取（避免引入 dotenv 套件）
+// 從 cwd 往上走找最近的 .env，讓所有 worktree 共用 main 的 .env
+function findEnvFile(): string | null {
+  let dir = process.cwd();
+  while (true) {
+    const candidate = join(dir, ".env");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
 function loadEnv() {
-  const envPath = join(process.cwd(), ".env");
-  if (!existsSync(envPath)) return;
+  const envPath = findEnvFile();
+  if (!envPath) return;
   const text = readFileSync(envPath, "utf-8");
   for (const line of text.split("\n")) {
     const trimmed = line.trim();

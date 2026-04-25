@@ -19,7 +19,7 @@
  *        GEMINI_MODEL(預設 gemini-2.5-flash-preview-tts)
  */
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 
 const name = process.argv[2];
 if (!name) {
@@ -36,9 +36,21 @@ if (!existsSync(STEPS_PATH)) {
 }
 const tutorialJson = JSON.parse(readFileSync(STEPS_PATH, "utf-8"));
 
+// 從 cwd 往上走找最近的 .env(讓 worktree 共用 main 的 .env)
+function findEnvFile(): string | null {
+  let dir = process.cwd();
+  while (true) {
+    const candidate = join(dir, ".env");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
 function loadEnv() {
-  const envPath = join(process.cwd(), ".env");
-  if (!existsSync(envPath)) return;
+  const envPath = findEnvFile();
+  if (!envPath) return;
   const text = readFileSync(envPath, "utf-8");
   for (const line of text.split("\n")) {
     const trimmed = line.trim();
