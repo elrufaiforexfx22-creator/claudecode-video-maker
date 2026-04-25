@@ -15,15 +15,18 @@ type Props = {
   titleAccent: string; // e.g. "Claude Code"
   titleSuffix: string; // e.g. "安裝教學"
   platform?: PlatformBadge; // optional pill below title
+  durationFrames?: number; // 整個 intro Sequence 長度,用來算尾巴 fadeOut 時機
 };
 
-export const INTRO_DURATION_FRAMES = 60; // 2 秒 @ 30fps
+export const INTRO_DURATION_FRAMES = 60; // 2 秒 @ 30fps;Sequence 沒外傳長度時的 fallback
+const FADE_OUT_FRAMES = 10;
 
 export const IntroScene: React.FC<Props> = ({
   accentColor,
   titleAccent,
   titleSuffix,
   platform,
+  durationFrames,
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -39,9 +42,12 @@ export const IntroScene: React.FC<Props> = ({
     extrapolateRight: "clamp",
   });
 
+  // fadeOut 改成「Sequence 尾巴的最後 10 frames」,而不是固定 60 frame 就淡掉。
+  // 這樣 audio 講到哪 visual 就保留到哪,沒有空白尾巴。
+  const fadeOutEnd = durationFrames ?? INTRO_DURATION_FRAMES;
   const fadeOut = interpolate(
     frame,
-    [INTRO_DURATION_FRAMES - 10, INTRO_DURATION_FRAMES],
+    [fadeOutEnd - FADE_OUT_FRAMES, fadeOutEnd],
     [1, 0],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );

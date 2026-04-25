@@ -54,6 +54,7 @@ export const TutorialComposition: React.FC<TutorialCompositionProps> = ({
           titleAccent={TUTORIAL_CONFIG.intro.titleAccent}
           titleSuffix={TUTORIAL_CONFIG.intro.titleSuffix}
           platform={TUTORIAL_CONFIG.intro.platform}
+          durationFrames={introDur}
         />
         {data.intro?.voiceover ? (
           <Audio src={staticFile(`voiceover/${VIDEO_NAME}/intro.wav`)} />
