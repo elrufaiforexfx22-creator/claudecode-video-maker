@@ -1,6 +1,25 @@
+/**
+ * scripts/generate-tutorial-voiceover.ts
+ *
+ * 從指定 video 的 steps.json 取出 intro + 每個 step 的 voiceovers[],
+ * 透過 TTS provider 產出 .wav,寫入 public/voiceover/<name>/。
+ *
+ * 用法:
+ *   tsx scripts/generate-tutorial-voiceover.ts <video-name> [...filterIds]
+ *
+ * Provider 切換(env):
+ *   TTS_PROVIDER=elevenlabs (預設) | gemini
+ *
+ * ElevenLabs 必填:ELEVENLABS_API_KEY、ELEVENLABS_VOICE_ID
+ *   選填:ELEVENLABS_MODEL(預設 eleven_multilingual_v2)
+ *        ELEVENLABS_SAMPLE_RATE(預設 44100,Starter tier 最高 24000)
+ *
+ * Gemini 必填:GOOGLE_API_KEY
+ *   選填:GEMINI_VOICE(預設 Aoede)
+ *        GEMINI_MODEL(預設 gemini-2.5-flash-preview-tts)
+ */
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { parseTutorialData } from "../src/tutorial/steps-data";
 
 const name = process.argv[2];
 if (!name) {
@@ -33,38 +52,32 @@ function loadEnv() {
 }
 loadEnv();
 
-const API_KEY = process.env.GOOGLE_API_KEY;
-if (!API_KEY) {
-  console.error("❌ Missing GOOGLE_API_KEY in .env");
-  process.exit(1);
-}
+const PROVIDER = (process.env.TTS_PROVIDER ?? "elevenlabs").toLowerCase();
 
-const MODEL = "gemini-2.5-flash-preview-tts";
-const VOICE = "Aoede"; // 女聲偏旋律感,教學片清晰
 const OUTPUT_DIR = join("public", "voiceover", name);
 
 type ClipToRender = { id: string; text: string };
+type AudioResult = { pcm: Buffer; sampleRate: number };
 
-const data = parseTutorialData(tutorialJson);
 const clips: ClipToRender[] = [];
-if (data.intro?.voiceover) {
-  clips.push({ id: "intro", text: data.intro.voiceover });
+if (tutorialJson?.intro?.voiceover) {
+  clips.push({ id: "intro", text: tutorialJson.intro.voiceover });
 }
-for (const step of data.steps) {
-  if (step.voiceovers) {
-    step.voiceovers.forEach((text, i) => {
+for (const step of tutorialJson.steps ?? []) {
+  if (Array.isArray(step.voiceovers)) {
+    step.voiceovers.forEach((text: string, i: number) => {
       clips.push({ id: `${step.id}-p${i + 1}`, text });
     });
   }
 }
 if (clips.length === 0) {
-  console.error("❌ 沒有任何 voiceover 腳本 (intro 或 step.voiceover 都沒填)");
+  console.error("❌ 沒有任何 voiceover 腳本 (intro 或 step.voiceovers 都沒填)");
   process.exit(1);
 }
 
 function pcmToWav(
   pcm: Buffer,
-  sampleRate = 24000,
+  sampleRate: number,
   channels = 1,
   bitsPerSample = 16,
 ): Buffer {
@@ -89,48 +102,118 @@ function pcmToWav(
   return Buffer.concat([header, pcm]);
 }
 
-async function generate(clip: ClipToRender): Promise<number> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
-  const body = {
-    contents: [{ parts: [{ text: clip.text }] }],
-    generationConfig: {
-      responseModalities: ["AUDIO"],
-      speechConfig: {
-        voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } },
-      },
+// ---- ElevenLabs ----
+function makeElevenLabsProvider() {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID;
+  const model = process.env.ELEVENLABS_MODEL ?? "eleven_multilingual_v2";
+  const sampleRate = Number(process.env.ELEVENLABS_SAMPLE_RATE ?? 44100);
+
+  if (!apiKey) {
+    console.error("❌ Missing ELEVENLABS_API_KEY in .env");
+    process.exit(1);
+  }
+  if (!voiceId) {
+    console.error("❌ Missing ELEVENLABS_VOICE_ID in .env");
+    console.error(
+      "    去 ElevenLabs Voice Library,點 clone 完的 voice → 複製 ID 貼進 .env",
+    );
+    process.exit(1);
+  }
+
+  return {
+    label: `ElevenLabs ${model} @ ${sampleRate}Hz, voice=${voiceId}`,
+    delayMs: 0, // Creator 同時併發 5,順序 call 沒壓力
+    async generate(clip: ClipToRender): Promise<AudioResult> {
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_${sampleRate}`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: clip.text, model_id: model }),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(
+          `ElevenLabs TTS failed for ${clip.id}: ${resp.status}\n${errText}`,
+        );
+      }
+      const pcm = Buffer.from(await resp.arrayBuffer());
+      if (pcm.length === 0) {
+        throw new Error(`ElevenLabs returned empty audio for ${clip.id}`);
+      }
+      return { pcm, sampleRate };
     },
   };
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`TTS failed for ${clip.id}: ${response.status}\n${errText}`);
-  }
-  const json = (await response.json()) as {
-    candidates?: {
-      content?: { parts?: { inlineData?: { data: string } }[] };
-    }[];
-  };
-  const audioB64 = json.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!audioB64) {
-    console.error(`❌ Unexpected response for ${clip.id}:`);
-    console.error(JSON.stringify(json, null, 2).slice(0, 800));
-    throw new Error("No audio in response");
-  }
-  const pcm = Buffer.from(audioB64, "base64");
-  const wav = pcmToWav(pcm);
-  mkdirSync(OUTPUT_DIR, { recursive: true });
-  const outPath = join(OUTPUT_DIR, `${clip.id}.wav`);
-  writeFileSync(outPath, wav);
-  const seconds = pcm.length / (24000 * 2);
-  console.log(
-    `✓ ${clip.id}: ${(wav.length / 1024).toFixed(1)} KB (${seconds.toFixed(2)}s) → ${outPath}`,
-  );
-  return seconds;
 }
+
+// ---- Gemini ----
+function makeGeminiProvider() {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-preview-tts";
+  const voice = process.env.GEMINI_VOICE ?? "Aoede";
+  const sampleRate = 24000; // Gemini TTS 固定 24kHz
+
+  if (!apiKey) {
+    console.error("❌ Missing GOOGLE_API_KEY in .env");
+    process.exit(1);
+  }
+
+  return {
+    label: `Gemini ${model}, voice=${voice}`,
+    delayMs: 7000, // Gemini TTS 限速嚴,維持原本 7 秒間隔
+    async generate(clip: ClipToRender): Promise<AudioResult> {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const body = {
+        contents: [{ parts: [{ text: clip.text }] }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
+          },
+        },
+      };
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(
+          `Gemini TTS failed for ${clip.id}: ${resp.status}\n${errText}`,
+        );
+      }
+      const json = (await resp.json()) as {
+        candidates?: {
+          content?: { parts?: { inlineData?: { data: string } }[] };
+        }[];
+      };
+      const audioB64 =
+        json.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!audioB64) {
+        console.error(`❌ Unexpected Gemini response for ${clip.id}:`);
+        console.error(JSON.stringify(json, null, 2).slice(0, 800));
+        throw new Error("No audio in Gemini response");
+      }
+      return { pcm: Buffer.from(audioB64, "base64"), sampleRate };
+    },
+  };
+}
+
+const provider =
+  PROVIDER === "gemini"
+    ? makeGeminiProvider()
+    : PROVIDER === "elevenlabs"
+      ? makeElevenLabsProvider()
+      : (() => {
+          console.error(
+            `❌ 未知 TTS_PROVIDER="${PROVIDER}"。支援:elevenlabs, gemini`,
+          );
+          process.exit(1);
+        })();
 
 const filter = process.argv.slice(3);
 const toGenerate =
@@ -141,9 +224,8 @@ if (toGenerate.length === 0) {
   console.error(`   Available: ${clips.map((c) => c.id).join(", ")}`);
   process.exit(1);
 }
-console.log(
-  `🎙️  Generating tutorial voiceover with voice="${VOICE}" for: ${toGenerate.map((c) => c.id).join(", ")}`,
-);
+console.log(`🎙️  ${provider.label}`);
+console.log(`   clips: ${toGenerate.map((c) => c.id).join(", ")}`);
 
 const durationsPath = join(OUTPUT_DIR, "durations.json");
 let durations: Record<string, number> = {};
@@ -152,14 +234,22 @@ if (existsSync(durationsPath)) {
 }
 
 void (async () => {
-  for (const clip of toGenerate) {
-    const seconds = await generate(clip);
+  mkdirSync(OUTPUT_DIR, { recursive: true });
+  for (let i = 0; i < toGenerate.length; i++) {
+    const clip = toGenerate[i];
+    const { pcm, sampleRate } = await provider.generate(clip);
+    const wav = pcmToWav(pcm, sampleRate);
+    const outPath = join(OUTPUT_DIR, `${clip.id}.wav`);
+    writeFileSync(outPath, wav);
+    const seconds = pcm.length / (sampleRate * 2); // 16-bit mono
     durations[clip.id] = seconds;
-    if (toGenerate.indexOf(clip) < toGenerate.length - 1) {
-      await new Promise((r) => setTimeout(r, 7000));
+    console.log(
+      `✓ ${clip.id}: ${(wav.length / 1024).toFixed(1)} KB (${seconds.toFixed(2)}s) → ${outPath}`,
+    );
+    if (provider.delayMs > 0 && i < toGenerate.length - 1) {
+      await new Promise((r) => setTimeout(r, provider.delayMs));
     }
   }
-  mkdirSync(OUTPUT_DIR, { recursive: true });
   writeFileSync(durationsPath, JSON.stringify(durations, null, 2));
   console.log(`\n🎙️  Done — ${toGenerate.length} clip(s) written.`);
 })();
