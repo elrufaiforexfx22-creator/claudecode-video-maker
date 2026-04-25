@@ -60,3 +60,10 @@ public/screenshots/**/*.webp
 public/screenshots/**/*.jpg
 public/screenshots/**/steps.raw.json
 !public/screenshots/**/.gitkeep
+
+# Python virtual env (mask-tutorial-images.py 用,本機重建即可)
+.venv/
+
+# Per-video mask config(每支教學自己的截圖個資遮罩配置,屬 per-video content)
+scripts/mask-tutorial-images.config.json
+!scripts/mask-tutorial-images.config.example.json

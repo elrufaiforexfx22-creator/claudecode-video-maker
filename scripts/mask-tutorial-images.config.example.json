@@ -1,0 +1,17 @@
+{
+  "_README": "把要遮的截圖一張一個 entry。key = input/images/<檔名>,out = 輸出檔名(會放到 --output 那個目錄)。ocr_mask 是要 OCR 找出來蓋掉的字串(個資、handle、顯示名),manual_mask 是 OCR 抓不到時的手動 bbox(像大頭照、徽章圖示)。color 預設黑色,可省。複製這個檔案成 mask-tutorial-images.config.json 再改;真實 config 已被 .gitignore 掉,不會推到 main。",
+
+  "raw-screenshot-001.png": {
+    "out": "01-步驟說明.png",
+    "ocr_mask": ["your_handle", "your_display_name"],
+    "manual_mask": []
+  },
+
+  "raw-screenshot-002.png": {
+    "out": "02-含大頭照.png",
+    "ocr_mask": ["your_handle"],
+    "manual_mask": [
+      { "x1": 60, "y1": 200, "x2": 100, "y2": 240, "color": "#000000" }
+    ]
+  }
+}
