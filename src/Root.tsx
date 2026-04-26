@@ -8,6 +8,8 @@ import { ThumbnailIG } from "./thumbnails/ThumbnailIG";
 import { ThumbnailReel } from "./thumbnails/ThumbnailReel";
 import { BannerYT } from "./BannerYT";
 import { BannerFB } from "./BannerFB";
+import { BannerIG } from "./BannerIG";
+import { BannerLI } from "./BannerLI";
 import durationsJson from "../public/voiceover/durations.json";
 import { TUTORIAL_STEPS_JSON } from "./tutorial/content";
 import { parseTutorialData } from "./tutorial/steps-data";
@@ -168,6 +170,44 @@ export const RemotionRoot: React.FC = () => {
             "把工具連結丟給 Claude Code 安裝,再告訴它影片需求就可以了,所有功能全靠對話完成",
             "就是這麼簡單無腦,點這張圖查看工具連結 ☝️",
           ],
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+        }}
+      />
+
+      {/* Instagram 4:5 貼文(1080x1350)— 沿用 FB 內容,portrait 排版 */}
+      <Still
+        id="BannerIG"
+        component={BannerIG}
+        width={1080}
+        height={1350}
+        defaultProps={{
+          headlineLeft: "自動化拍片整合",
+          headlineAccent: "工作流",
+          headlineRight: "",
+          subline: "Claude Code × 隨拚隨改 × 真人配音 × 自動發片到 YT / IG / Threads",
+          footerLine: "日更發片神器",
+          tagline: [
+            "把工具連結丟給 Claude Code 安裝,再告訴它影片需求就可以了,所有功能全靠對話完成",
+            "就是這麼簡單無腦,點這張圖查看工具連結 ☝️",
+          ],
+          primaryColor: TUTORIAL_CONFIG.accentColor,
+        }}
+      />
+
+      {/* LinkedIn 個人 profile 橫幅(1584x396,4:1)— 沿用 YT corner-decor 結構,無 tagline */}
+      <Still
+        id="BannerLI"
+        component={BannerLI}
+        width={1584}
+        height={396}
+        defaultProps={{
+          headlineLeft: "自動化拍片整合",
+          headlineAccent: "工作流",
+          headlineRight: "",
+          subline: "Claude Code × 隨拚隨改 × 真人配音 × 自動發片到 YT / IG / Threads",
+          footerLine: "日更發片神器",
+          decorLeftTop: "$ npx claudecode-video-maker",
+          decorRightBottom: "→ YouTube · Instagram · Threads",
           primaryColor: TUTORIAL_CONFIG.accentColor,
         }}
       />
