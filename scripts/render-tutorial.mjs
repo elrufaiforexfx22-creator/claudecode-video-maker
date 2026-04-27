@@ -74,8 +74,27 @@ for (const t of thumbs) {
   const r = runRemotion("still", compId, out);
   if (r.status !== 0) {
     console.error(`⚠️ ${t.label} 縮圖失敗 (exit ${r.status})`);
-  } else {
-    console.log(`✅ ${out}`);
+    continue;
+  }
+  console.log(`✅ ${out}`);
+
+  // Reel composition 額外輸出 JPG —— IG / Threads cover 必須是 JPG (skill 規定)。
+  // YT / IG 縮圖留 PNG 即可,YT thumbnail 接受 PNG 且品質較佳。
+  if (t.fileSuffix === "reel") {
+    const jpgOut = `output/${videoName}-${t.fileSuffix}.jpg`;
+    const conv = spawnSync(
+      "python3",
+      [
+        "-c",
+        `from PIL import Image; Image.open('${out}').convert('RGB').save('${jpgOut}', 'JPEG', quality=92)`,
+      ],
+      { cwd: projectRoot, stdio: "inherit" },
+    );
+    if (conv.status !== 0) {
+      console.error(`⚠️ ${t.label} JPG 轉檔失敗,但 PNG 已存。可手動跑 PIL 轉。`);
+    } else {
+      console.log(`✅ ${jpgOut}`);
+    }
   }
 }
 
