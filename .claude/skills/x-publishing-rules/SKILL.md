@@ -1,7 +1,11 @@
 ---
 name: x-publishing-rules
-description: X (Twitter) 發 thread / single post 完整規則 — 2026-Q1 起 Grok 演算法接管、hashtag 上限 1–2 個(超過 -40% 觸及)、外連結 -30~50% 觸及、Thread 比單推 +63% 曝光、作者回覆權重 +75 = 150× like、AI 生成偵測會降推。任何要寫 X 自動發 thread / 設計爆款結構 / 改貼文的 AI 應該先讀。
+description: ⚠️ DEFERRED 2026-04-27 — 本 channel 暫不發 X。Skill 內容保留(規則參考),但動工前先跟使用者確認真的要做 X 才執行,別自動把 X 列進跨平台發片清單。X (Twitter) 發 thread / single post 完整規則 — 2026-Q1 起 Grok 演算法接管、hashtag 上限 1–2 個、外連結 -30~50% 觸及、Thread 比單推 +63% 曝光。
 ---
+
+> ⚠️ **DEFERRED 2026-04-27** — 本 channel **暫不發 X**。
+> 此 skill 內容保留供未來參考(規則 / 爆款套路 / API 邊界),但**目前 X 不在跨平台發片 pipeline 內**。
+> 三平台 = YT + IG + 脆;X 不要自動寫 / 自動列入草稿。動工前先跟使用者確認真的要重啟 X 才執行。
 
 # X (Twitter) Publishing — Thread / Post 完整規則
 
