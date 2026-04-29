@@ -99,6 +99,17 @@ export const RemotionRoot: React.FC = () => {
         defaultProps={{ data: tutorialData }}
       />
 
+      {/* Tutorial 9:16 Reel — 重用 TutorialComposition,僅換尺寸 */}
+      <Composition
+        id={`${tutorialId}-Reel`}
+        component={TutorialComposition}
+        durationInFrames={tutorialDurationFrames}
+        fps={TUTORIAL_FPS}
+        width={1080}
+        height={1920}
+        defaultProps={{ data: tutorialData }}
+      />
+
       {mainContent.thumbnails.yt ? (
         <Still
           id="ThumbnailYT"

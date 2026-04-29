@@ -158,7 +158,8 @@ const PageContent: React.FC<{
   watermark?: Watermark;
 }> = ({ title, blocks, accentColor, watermark }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
+  const isReel = height > width; // 9:16 直式(reel)時垂直置中
 
   const titleSpring = spring({
     frame,
@@ -182,6 +183,7 @@ const PageContent: React.FC<{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        justifyContent: isReel ? "center" : "flex-start",
         padding: "48px 64px",
         gap: 24,
         fontFamily: FONT_FAMILY,

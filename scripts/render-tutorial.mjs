@@ -9,7 +9,8 @@
  *   或在 worktree 裡:node scripts/render-tutorial.mjs
  *
  * 輸出:
- *   output/<videoName>.mp4
+ *   output/<videoName>.mp4          (1920×1080 16:9,YT 用)
+ *   output/<videoName>-reel.mp4     (1080×1920 9:16,IG Reel / Threads 用)
  *   output/<videoName>-yt.png
  *   output/<videoName>-ig.png
  *   output/<videoName>-reel.png
@@ -61,7 +62,18 @@ if (renderResult.status !== 0) {
 }
 console.log(`✅ ${videoOut}\n`);
 
-// 2. 縮圖 3 張(composition id 對應 src/Root.tsx 的 Still 註冊)
+// 2. 9:16 Reel 影片
+console.log("📹 渲染 9:16 Reel mp4...");
+const reelOut = `output/${videoName}-reel.mp4`;
+const reelResult = runRemotion("render", `${videoName}-Reel`, reelOut);
+if (reelResult.status !== 0) {
+  console.error(`❌ Reel mp4 渲染失敗 (exit ${reelResult.status})`);
+  // 不 process.exit — 縮圖還是繼續跑
+} else {
+  console.log(`✅ ${reelOut}\n`);
+}
+
+// 3. 縮圖 3 張(composition id 對應 src/Root.tsx 的 Still 註冊)
 const thumbs = [
   { compSuffix: "ThumbnailYT", fileSuffix: "yt", label: "YouTube" },
   { compSuffix: "ThumbnailIG", fileSuffix: "ig", label: "Instagram" },
