@@ -1,0 +1,35 @@
+name: Refresh Meta Token
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'   # 每月 1 號 UTC 00:00(約 30 天頻率,留 30 天容錯緩衝)
+  workflow_dispatch:        # 允許手動觸發測試
+
+permissions:
+  contents: read
+  # 寫回 secret 由 gh CLI + GH_TOKEN 處理,不需要 workflow-level secrets:write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Refresh Threads token
+        run: node scripts/refresh-meta-token.mjs
+        env:
+          PLATFORM: threads
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 如果你也用 Instagram,把這段取消註解:
+      # - name: Refresh Instagram token
+      #   run: node scripts/refresh-meta-token.mjs
+      #   env:
+      #     PLATFORM: instagram
+      #     IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
