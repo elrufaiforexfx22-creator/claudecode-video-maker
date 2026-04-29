@@ -61,6 +61,7 @@ export const TutorialComposition: React.FC<TutorialCompositionProps> = ({
           accentColor={ACCENT_COLOR}
           titleAccent={TUTORIAL_CONFIG.intro.titleAccent}
           titleSuffix={TUTORIAL_CONFIG.intro.titleSuffix}
+          subtitle={TUTORIAL_CONFIG.intro.subtitle}
           platform={TUTORIAL_CONFIG.intro.platform}
           durationFrames={introDur}
         />

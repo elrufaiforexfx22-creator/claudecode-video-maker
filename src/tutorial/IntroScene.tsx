@@ -14,6 +14,7 @@ type Props = {
   accentColor: string;
   titleAccent: string; // e.g. "Claude Code"
   titleSuffix: string; // e.g. "安裝教學"
+  subtitle?: string; // optional tagline 副標
   platform?: PlatformBadge; // optional pill below title
   durationFrames?: number; // 整個 intro Sequence 長度,用來算尾巴 fadeOut 時機
 };
@@ -25,6 +26,7 @@ export const IntroScene: React.FC<Props> = ({
   accentColor,
   titleAccent,
   titleSuffix,
+  subtitle,
   platform,
   durationFrames,
 }) => {
@@ -82,6 +84,22 @@ export const IntroScene: React.FC<Props> = ({
         <span style={{ color: accentColor }}>{titleAccent}</span>{" "}
         <span>{titleSuffix}</span>
       </div>
+
+      {/* Optional 副標 / tagline */}
+      {subtitle ? (
+        <div
+          style={{
+            fontSize: 48,
+            fontWeight: 700,
+            color: "#444",
+            opacity: macChipOpacity,
+            transform: `translateY(${(1 - macChipOpacity) * 12}px)`,
+            textAlign: "center",
+          }}
+        >
+          {subtitle}
+        </div>
+      ) : null}
 
       {/* Platform pill — render only if platform set */}
       {platform && PlatformIcon ? (

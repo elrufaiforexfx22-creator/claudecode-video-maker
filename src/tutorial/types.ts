@@ -85,6 +85,7 @@ export type TutorialConfig = {
   intro: {
     titleAccent: string; // e.g. "Claude Code"
     titleSuffix: string; // e.g. "安裝教學" or "Tutorial"
+    subtitle?: string; // optional tagline 副標,例:「只靠對話就能拍片」
     platform?: PlatformBadge; // optional pill below title
   };
   // 結尾場景(可選):放在最後一個 step 後面,跟 intro 對稱。
