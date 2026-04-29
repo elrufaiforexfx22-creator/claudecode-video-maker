@@ -159,7 +159,8 @@ const PageContent: React.FC<{
 }> = ({ title, blocks, accentColor, watermark }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
-  const isReel = height > width; // 9:16 直式(reel)時垂直置中
+  // 9:16 直式時內容垂直置中(blocks 在 1920 高容器內居中,不下方留 1200px 空白)
+  const isReel = height > width;
 
   const titleSpring = spring({
     frame,
@@ -183,6 +184,8 @@ const PageContent: React.FC<{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        // 直式時 main axis(vertical)居中內容,消除下方空白;
+        // 橫式維持 flex-start 從上而下(原 layout 不破壞)
         justifyContent: isReel ? "center" : "flex-start",
         padding: "48px 64px",
         gap: 24,
@@ -222,6 +225,11 @@ const PageContent: React.FC<{
           [16, 0],
           { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
         );
+        // paragraph(列點)在 9:16 直式才縮排 60px(列點 1/2/3/4 對齊在縮排位置);
+        // 16:9 橫式維持居中(避免 paragraph 貼左、右側留大空白「跑到外面」感)。
+        // callout / code / image 始終居中。
+        const isParagraph = block.type === "paragraph";
+        const indentParagraph = isParagraph && isReel;
         return (
           <div
             key={i}
@@ -230,7 +238,9 @@ const PageContent: React.FC<{
               transform: `translateY(${translateY}px)`,
               width: "100%",
               display: "flex",
-              justifyContent: "center",
+              justifyContent: indentParagraph ? "flex-start" : "center",
+              paddingLeft: indentParagraph ? 60 : 0,
+              boxSizing: "border-box",
             }}
           >
             <BlockRenderer block={block} accentColor={accentColor} />

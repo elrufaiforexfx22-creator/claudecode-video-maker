@@ -27,7 +27,9 @@ export const OutroScene: React.FC<Props> = ({
   durationFrames,
 }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
+  // 9:16 直式時主標改垂直堆疊(✓ 在上 title 在下),字體縮小避免跑版
+  const isReel = height > width;
 
   const titleSpring = spring({
     frame,
@@ -68,38 +70,44 @@ export const OutroScene: React.FC<Props> = ({
         opacity: fadeOut,
       }}
     >
-      {/* 主標 — checkmark + title,spring fade-in */}
+      {/* 主標 — checkmark + title,spring fade-in。
+          9:16 直式垂直堆疊(✓ 在上 title 在下),字體縮小避免跑版;
+          16:9 維持橫排(原 layout)。 */}
       <div
         style={{
           display: "flex",
+          flexDirection: isReel ? "column" : "row",
           alignItems: "center",
-          gap: 28,
+          gap: isReel ? 32 : 28,
           opacity: titleSpring,
           transform: `translateY(${(1 - titleSpring) * 20}px)`,
+          maxWidth: "90%",
         }}
       >
         <div
           style={{
-            width: 96,
-            height: 96,
+            width: isReel ? 120 : 96,
+            height: isReel ? 120 : 96,
             borderRadius: "50%",
             background: accentColor,
             color: WHITE,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 64,
+            fontSize: isReel ? 80 : 64,
             fontWeight: 900,
             lineHeight: 1,
+            flexShrink: 0,
           }}
         >
           ✓
         </div>
         <div
           style={{
-            fontSize: 104,
+            fontSize: isReel ? 64 : 104,
             fontWeight: 900,
-            lineHeight: 1.1,
+            lineHeight: 1.2,
+            textAlign: "center",
           }}
         >
           {title}

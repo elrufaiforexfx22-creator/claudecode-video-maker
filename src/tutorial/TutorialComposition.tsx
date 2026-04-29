@@ -7,6 +7,7 @@ import { OutroScene, OUTRO_DURATION_FRAMES } from "./OutroScene";
 import { TUTORIAL_CONFIG } from "./config";
 import { TUTORIAL_DURATIONS } from "./content";
 import { WHITE } from "../constants";
+import { SubtitleOverlay } from "./SubtitleOverlay";
 
 const FPS = 30;
 const ACCENT_COLOR = TUTORIAL_CONFIG.accentColor;
@@ -109,6 +110,14 @@ export const TutorialComposition: React.FC<TutorialCompositionProps> = ({
             );
           })()
         : null}
+
+      {/* 字幕 overlay — 全片最上層,覆蓋所有 scene */}
+      <SubtitleOverlay
+        introText={data.intro?.voiceover ?? ""}
+        outroText={data.outro?.voiceover ?? ""}
+        steps={data.steps}
+        durations={TUTORIAL_DURATIONS}
+      />
     </AbsoluteFill>
   );
 };
